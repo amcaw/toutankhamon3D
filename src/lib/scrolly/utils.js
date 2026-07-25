@@ -53,10 +53,6 @@ export function isMemoryConstrained() {
   return lowMemory || (coarsePointer && smallScreen);
 }
 
-// Decoded frames are kept as ImageBitmaps, i.e. GPU textures at 4 bytes per
-// pixel. A phone's renderer budget is a few hundred MB, so cap the cache and
-// let the worker drop frames evenly rather than have the GPU discard them
-// mid-scroll.
 export function frameCacheBudgetBytes() {
   return (isMemoryConstrained() ? 140 : 600) * 1024 * 1024;
 }

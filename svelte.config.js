@@ -21,8 +21,6 @@ const config = {
 		// Leave unset (or empty) for root deployment.
 		paths: {
 			base: process.env.BASE_PATH ?? '',
-			// Absolute asset URLs: the scrolly decoder worker fetches the video from
-			// its own /_app/immutable/workers/ location, where relative paths break.
 			relative: false
 		}
 	}

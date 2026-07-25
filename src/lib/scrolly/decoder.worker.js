@@ -103,6 +103,13 @@ function decode({ src, maxLongEdge, budgetBytes, debug }) {
   let emittedIndex = 0;
   const pending = [];
 
+  const MAX_IN_FLIGHT = 6;
+  const queue = [];
+  let allSamplesQueued = false;
+  let finishing = false;
+  let scratch = null;
+  let scratchContext = null;
+
   const decoder = new VideoDecoder({
     output: (frame) => {
       const keep = decodedIndex % stride === 0;
@@ -110,24 +117,28 @@ function decode({ src, maxLongEdge, budgetBytes, debug }) {
 
       if (!keep) {
         frame.close();
+        pump();
         return;
       }
 
       const index = emittedIndex;
       emittedIndex += 1;
 
-      const options = { resizeQuality: 'low' };
-      if (target) {
-        options.resizeWidth = target.width;
-        options.resizeHeight = target.height;
+      const width = target ? target.width : frame.displayWidth;
+      const height = target ? target.height : frame.displayHeight;
+
+      if (!scratch || scratch.width !== width || scratch.height !== height) {
+        scratch = new OffscreenCanvas(width, height);
+        scratchContext = scratch.getContext('2d', { alpha: false });
       }
 
-      const promise = createImageBitmap(frame, options).then((bitmap) => {
-        frame.close();
-        postMessage({ type: 'frame', index, bitmap }, [bitmap]);
-      });
+      scratchContext.drawImage(frame, 0, 0, width, height);
+      frame.close();
 
-      pending.push(promise);
+      const bitmap = scratch.transferToImageBitmap();
+      postMessage({ type: 'frame', index, bitmap }, [bitmap]);
+
+      pump();
     },
     error: (e) => {
       postMessage({
@@ -183,11 +194,41 @@ function decode({ src, maxLongEdge, budgetBytes, debug }) {
     }
   };
 
+  function finish() {
+    if (finishing) return;
+    finishing = true;
+
+    decoder
+      .flush()
+      .then(() => Promise.all(pending))
+      .then(() => {
+        postMessage({ type: 'done' });
+        if (decoder.state !== 'closed') decoder.close();
+      })
+      .catch((e) => {
+        postMessage({
+          type: 'error',
+          message: String(e && e.message ? e.message : e),
+        });
+      });
+  }
+
+  function pump() {
+    while (
+      queue.length &&
+      decoder.decodeQueueSize < MAX_IN_FLIGHT
+    ) {
+      decoder.decode(queue.shift());
+    }
+
+    if (allSamplesQueued && !queue.length) finish();
+  }
+
   mp4boxfile.onSamples = (track_id, ref, samples) => {
     for (let i = 0; i < samples.length; i += 1) {
       const sample = samples[i];
 
-      decoder.decode(
+      queue.push(
         new EncodedVideoChunk({
           type: sample.is_sync ? 'key' : 'delta',
           timestamp: sample.cts,
@@ -196,6 +237,8 @@ function decode({ src, maxLongEdge, budgetBytes, debug }) {
         }),
       );
     }
+
+    pump();
   };
 
   fetch(src)
@@ -214,19 +257,8 @@ function decode({ src, maxLongEdge, budgetBytes, debug }) {
       const append = ({ done, value }) => {
         if (done) {
           mp4boxfile.flush();
-          decoder
-            .flush()
-            .then(() => Promise.all(pending))
-            .then(() => {
-              postMessage({ type: 'done' });
-              if (decoder.state !== 'closed') decoder.close();
-            })
-            .catch((e) => {
-              postMessage({
-                type: 'error',
-                message: String(e && e.message ? e.message : e),
-              });
-            });
+          allSamplesQueued = true;
+          pump();
           return null;
         }
 

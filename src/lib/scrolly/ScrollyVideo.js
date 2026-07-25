@@ -92,6 +92,7 @@ class ScrollyVideo {
 
     this.currentTime = 0;
     this.targetTime = 0;
+    this.transitionToken = 0;
     this.canvas = null;
     this.context = null;
     this.frames = [];
@@ -206,6 +207,10 @@ class ScrollyVideo {
       if (this.debug)
         console.warn('Cannot perform video decode: `useWebCodes` disabled');
 
+      this.video.preload = 'auto';
+      this.video.load();
+      this.onReady();
+
       return;
     }
 
@@ -312,7 +317,17 @@ class ScrollyVideo {
     const duration = distance * 1000;
     const isForwardTransition = diff > 0;
 
+    if (this.transitioningRaf) {
+      cancelAnimationFrame(this.transitioningRaf);
+      this.transitioningRaf = null;
+    }
+
+    this.transitionToken += 1;
+    const token = this.transitionToken;
+
     const tick = ({ startCurrentTime, startTimestamp, timestamp }) => {
+      if (this.transitionToken !== token) return;
+
       const progress = (timestamp - startTimestamp) / duration;
 
       const hasPassedThreshold = isForwardTransition
@@ -357,7 +372,12 @@ class ScrollyVideo {
         }
 
         this.paintCanvasFrame(Math.floor(this.currentTime * this.frameRate));
-      } else if (jump || this.isSafari || !isForwardTransition) {
+      } else if (
+        jump ||
+        this.isSafari ||
+        !this.useWebCodecs ||
+        !isForwardTransition
+      ) {
         this.video.pause();
 
         if (easedProgress) {

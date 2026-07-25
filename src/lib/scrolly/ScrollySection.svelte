@@ -1,5 +1,6 @@
 <script lang="ts">
   import ScrollyVideo from './ScrollyVideo.svelte';
+  import { isMemoryConstrained } from './utils';
 
   interface Props {
     src: string;
@@ -25,6 +26,13 @@
   let section = $state<HTMLElement | undefined>(undefined);
   let measured = $state<string | null>(null);
   let active = $state(false);
+  let constrained = $state(false);
+
+  let webCodecs = $derived(useWebCodecs && !constrained);
+
+  $effect(() => {
+    constrained = isMemoryConstrained();
+  });
 
   $effect(() => {
     if (!section) return;
@@ -73,7 +81,13 @@
 >
   <div class="video-scroll-container">
     {#if active}
-      <ScrollyVideo {src} {transitionSpeed} {frameThreshold} {useWebCodecs} {debug} />
+      <ScrollyVideo
+        {src}
+        {transitionSpeed}
+        {frameThreshold}
+        {debug}
+        useWebCodecs={webCodecs}
+      />
     {:else}
       <div
         class="video-placeholder"
