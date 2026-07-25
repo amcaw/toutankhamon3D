@@ -28,14 +28,22 @@
     if (!foreground) return;
 
     const element = foreground;
+    let lastWidth = window.innerWidth;
+
     const measure = () => {
       measured = `${element.offsetHeight}px`;
     };
 
-    measure();
-    window.addEventListener('resize', measure);
+    const onResize = () => {
+      if (window.innerWidth === lastWidth) return;
+      lastWidth = window.innerWidth;
+      measure();
+    };
 
-    return () => window.removeEventListener('resize', measure);
+    measure();
+    window.addEventListener('resize', onResize);
+
+    return () => window.removeEventListener('resize', onResize);
   });
 </script>
 
@@ -83,6 +91,8 @@
     flex-direction: column;
     align-items: stretch;
     pointer-events: none;
+    transform: translateZ(0);
+    will-change: transform;
   }
 
   .step {
@@ -114,6 +124,7 @@
     font-size: calc(24px + 2 * (100vw - 1250px) / 3750);
     text-shadow: 0 1px 12px rgba(0, 0, 0, 0.55);
     pointer-events: auto;
+    contain: layout paint;
   }
 
   @media (max-width: 500px) {

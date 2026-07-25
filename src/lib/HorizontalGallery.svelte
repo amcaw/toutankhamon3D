@@ -13,6 +13,10 @@
 
   let { slides = [] }: Props = $props();
 
+  let maxAspect = $derived(
+    slides.reduce((max, slide) => Math.max(max, (slide.width ?? 4) / (slide.height ?? 3)), 0.1)
+  );
+
   let spaceHolder = $state<HTMLElement | undefined>(undefined);
   let sticky = $state<HTMLElement | undefined>(undefined);
   let horizontal = $state<HTMLElement | undefined>(undefined);
@@ -54,7 +58,7 @@
   <div class="space-holder" bind:this={spaceHolder}>
     <div class="sticky" bind:this={sticky}>
       <div class="horizontal" bind:this={horizontal}>
-        <section role="feed" class="cards">
+        <section role="feed" class="cards" style="--max-aspect: {maxAspect}">
           {#each slides as slide}
             <figure
               class="card"
@@ -104,7 +108,8 @@
   }
 
   .cards {
-    --card-height: min(48vh, 440px);
+    --card-width-limit: 80vw;
+    --card-height: min(48vh, 440px, calc(var(--card-width-limit) / var(--max-aspect)));
     --caption-space: 7rem;
     position: relative;
     height: 100%;
@@ -120,7 +125,7 @@
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    width: min(calc(var(--card-height) * var(--aspect)), 80vw);
+    width: calc(var(--card-height) * var(--aspect));
     margin: 0 75px 0 0;
     flex-shrink: 0;
   }
@@ -129,8 +134,7 @@
     width: 100%;
     height: var(--card-height);
     max-height: none;
-    object-fit: contain;
-    object-position: top center;
+    object-fit: cover;
     border-radius: var(--radius);
   }
 
@@ -150,12 +154,12 @@
     }
 
     .cards {
-      --card-height: min(40vh, 340px);
+      --card-width-limit: 86vw;
+      --card-height: min(40vh, 340px, calc(var(--card-width-limit) / var(--max-aspect)));
       --caption-space: 9rem;
     }
 
     .card {
-      width: min(calc(var(--card-height) * var(--aspect)), 85vw);
       margin-right: 40px;
     }
 

@@ -39,6 +39,8 @@
   --navbar-height:   50px;
 
   --media-max-height: calc(100vh - var(--navbar-height) - 5rem);
+
+  --media-max-height: calc(100svh - var(--navbar-height) - 5rem);
 }
 
 *, *::before, *::after {

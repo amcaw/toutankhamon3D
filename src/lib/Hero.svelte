@@ -16,6 +16,8 @@
 </script>
 
 <section class="hero">
+  <img src={image} alt="" fetchpriority="high" />
+
   <div class="wrapper hero__wrapper">
     <div class="hero__content">
       <h1 class="hero__headline">{title}</h1>
@@ -30,12 +32,11 @@
         {/if}
       </div>
     </div>
-
-    {#if imageCredit}
-      <span class="image-credit">{imageCredit}</span>
-    {/if}
-    <img src={image} alt="" fetchpriority="high" />
   </div>
+
+  {#if imageCredit}
+    <span class="image-credit">{imageCredit}</span>
+  {/if}
 
   <div class="mouse_wheel">
     <div class="anim-scroll">
@@ -48,8 +49,10 @@
   .hero {
     --gradient-dir: to top;
     position: relative;
-    min-height: calc(300px + 15vw);
     display: grid;
+    align-items: center;
+    min-height: 100vh;
+    min-height: 100svh;
   }
 
   .hero:after {
@@ -76,34 +79,13 @@
   }
 
   .hero__wrapper {
-    flex: 1;
+    position: relative;
+    z-index: 2;
     display: grid;
-    place-content: end start;
+    place-content: center start;
     width: 100%;
-    height: 100vh;
-    padding-left: 0;
-    padding-right: 0;
-    margin-top: -5em;
-  }
-
-  @media (min-width: 800px) {
-    .hero__wrapper {
-      place-content: center start;
-    }
-
-    .hero__content {
-      margin-top: 7em;
-    }
-  }
-
-  @media (max-width: 550px) {
-    .hero__wrapper {
-      place-content: center start;
-    }
-
-    .mouse_wheel {
-      margin-top: -10em;
-    }
+    padding-top: var(--navbar-height);
+    padding-bottom: 5rem;
   }
 
   .hero__content {
@@ -164,12 +146,14 @@
   }
 
   .mouse_wheel {
-    align-items: center;
+    position: absolute;
+    bottom: clamp(1rem, 4vh, 2.5rem);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3;
     display: flex;
-    flex-direction: column;
+    align-items: center;
     justify-content: center;
-    padding: 1em;
-    z-index: 1;
   }
 
   .anim-scroll {
