@@ -1,4 +1,4 @@
-export default (src, emitFrame, debug, { maxLongEdge } = {}) =>
+export default (src, emitFrame, debug, { maxLongEdge, budgetBytes } = {}) =>
   new Promise((resolve, reject) => {
     if (typeof Worker !== 'function' || typeof VideoDecoder !== 'function') {
       if (debug)
@@ -48,5 +48,5 @@ export default (src, emitFrame, debug, { maxLongEdge } = {}) =>
       finish(() => reject(new Error(event.message || 'Decoder worker error')));
     };
 
-    worker.postMessage({ type: 'decode', src, maxLongEdge, debug });
+    worker.postMessage({ type: 'decode', src, maxLongEdge, budgetBytes, debug });
   });

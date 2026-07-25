@@ -78,7 +78,15 @@ function computeTarget(width, height, maxLongEdge) {
   };
 }
 
-function decode({ src, maxLongEdge, debug }) {
+function computeStride(frameCount, width, height, budgetBytes) {
+  if (!budgetBytes || !frameCount || !width || !height) return 1;
+
+  const affordable = Math.max(1, Math.floor(budgetBytes / (width * height * 4)));
+
+  return Math.max(1, Math.ceil(frameCount / affordable));
+}
+
+function decode({ src, maxLongEdge, budgetBytes, debug }) {
   if (
     typeof VideoDecoder !== 'function' ||
     typeof EncodedVideoChunk !== 'function'
@@ -90,13 +98,23 @@ function decode({ src, maxLongEdge, debug }) {
   const mp4boxfile = MP4Box.createFile();
   let codec;
   let target = null;
-  let frameIndex = 0;
+  let stride = 1;
+  let decodedIndex = 0;
+  let emittedIndex = 0;
   const pending = [];
 
   const decoder = new VideoDecoder({
     output: (frame) => {
-      const index = frameIndex;
-      frameIndex += 1;
+      const keep = decodedIndex % stride === 0;
+      decodedIndex += 1;
+
+      if (!keep) {
+        frame.close();
+        return;
+      }
+
+      const index = emittedIndex;
+      emittedIndex += 1;
 
       const options = { resizeQuality: 'low' };
       if (target) {
@@ -132,6 +150,22 @@ function decode({ src, maxLongEdge, debug }) {
       const width = (track.video && track.video.width) || track.track_width;
       const height = (track.video && track.video.height) || track.track_height;
       target = computeTarget(width, height, maxLongEdge);
+
+      stride = computeStride(
+        track.nb_samples,
+        target ? target.width : width,
+        target ? target.height : height,
+        budgetBytes,
+      );
+
+      if (debug)
+        console.info(
+          'Frame cache:',
+          Math.ceil((track.nb_samples || 0) / stride),
+          'frames at',
+          `${target ? target.width : width}x${target ? target.height : height}`,
+          `(stride ${stride})`,
+        );
 
       const avccBox =
         mp4boxfile.moov.traks[0].mdia.minf.stbl.stsd.entries[0].avcC;

@@ -130,7 +130,11 @@
   <img src={`${base}/pics/map.png`} alt="Plan du tombeau de Toutankhamon" width="976" height="980" />
 </figure>
 
-<ScrollySection src={`${base}/pics/output.mp4`} steps={discoverySteps} />
+<ScrollySection
+  src={`${base}/pics/output.mp4`}
+  poster={`${base}/pics/poster1.jpg`}
+  steps={discoverySteps}
+/>
 
 <div class="article" use:typoAction>
   <p>
@@ -233,7 +237,11 @@
   <p>Mais poursuivons notre exploration...</p>
 </div>
 
-<ScrollySection src={`${base}/pics/output2.mp4`} steps={chamberSteps} />
+<ScrollySection
+  src={`${base}/pics/output2.mp4`}
+  poster={`${base}/pics/poster2.jpg`}
+  steps={chamberSteps}
+/>
 
 <div class="article" use:typoAction>
   <p>

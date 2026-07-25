@@ -1,5 +1,10 @@
 import videoDecoder from './videoDecoder';
-import { debounce, isScrollPositionAtTarget, displayMaxLongEdge } from './utils';
+import {
+  debounce,
+  isScrollPositionAtTarget,
+  displayMaxLongEdge,
+  frameCacheBudgetBytes,
+} from './utils';
 
 class ScrollyVideo {
   constructor({
@@ -222,7 +227,10 @@ class ScrollyVideo {
           this.frames[index] = bitmap;
         },
         this.debug,
-        { maxLongEdge: displayMaxLongEdge() },
+        {
+          maxLongEdge: displayMaxLongEdge(),
+          budgetBytes: frameCacheBudgetBytes(),
+        },
       );
     } catch (error) {
       if (this.debug)

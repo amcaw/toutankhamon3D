@@ -3,6 +3,7 @@
 
   interface Props {
     src: string;
+    poster?: string;
     steps?: string[];
     transitionSpeed?: number;
     frameThreshold?: number;
@@ -12,6 +13,7 @@
 
   let {
     src,
+    poster = '',
     steps = [],
     transitionSpeed = 12,
     frameThreshold = 0.05,
@@ -20,7 +22,24 @@
   }: Props = $props();
 
   let foreground = $state<HTMLElement | undefined>(undefined);
+  let section = $state<HTMLElement | undefined>(undefined);
   let measured = $state<string | null>(null);
+  let active = $state(false);
+
+  $effect(() => {
+    if (!section) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        active = entry.isIntersecting;
+      },
+      { rootMargin: '150% 0px' }
+    );
+
+    observer.observe(section);
+
+    return () => observer.disconnect();
+  });
 
   let scrollHeight = $derived(measured ?? `${60 + steps.length * 130}vh`);
 
@@ -47,9 +66,20 @@
   });
 </script>
 
-<section class="scrollytelling-container" style="--scroll-height: {scrollHeight}">
+<section
+  class="scrollytelling-container"
+  style="--scroll-height: {scrollHeight}"
+  bind:this={section}
+>
   <div class="video-scroll-container">
-    <ScrollyVideo {src} {transitionSpeed} {frameThreshold} {useWebCodecs} {debug} />
+    {#if active}
+      <ScrollyVideo {src} {transitionSpeed} {frameThreshold} {useWebCodecs} {debug} />
+    {:else}
+      <div
+        class="video-placeholder"
+        style={poster ? `background-image: url(${poster})` : undefined}
+      ></div>
+    {/if}
   </div>
 
   <div class="foreground" bind:this={foreground}>
@@ -79,6 +109,16 @@
     width: 100%;
     height: 100vh;
     overflow: hidden;
+  }
+
+  .video-placeholder {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    height: 100vh;
+    background-color: #000;
+    background-position: center center;
+    background-size: cover;
   }
 
   .foreground {
